@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -9,8 +10,11 @@ public class MainManager : MonoBehaviour
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
-
-    public Text ScoreText;
+    
+    // В инспекторе к полям привязываются соответствующие объекты
+    public TextMeshProUGUI PlayerNameText;
+    public TextMeshProUGUI ScoreText;
+    public TextMeshProUGUI HighScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
@@ -22,6 +26,18 @@ public class MainManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // Отображаем имя игрока, введённое в меню
+        PlayerNameText.text = PlayerData.Instance.PlayerName;
+        
+        // Инициализируем счет
+        m_Points = 0;
+        ScoreText.text = "Счёт: " + m_Points;
+        
+        // Загружаем лучший рекорд из PlayerPrefs
+        PlayerData.Instance.BestScore = PlayerPrefs.GetInt("HighScore", 0);
+        PlayerData.Instance.BestPlayerName = PlayerPrefs.GetString("HighScoreName", "—");
+        HighScoreText.text = $"Лучший счёт: {PlayerData.Instance.BestPlayerName} : {PlayerData.Instance.BestScore}";
+        
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -65,12 +81,29 @@ public class MainManager : MonoBehaviour
     void AddPoint(int point)
     {
         m_Points += point;
-        ScoreText.text = $"Score : {m_Points}";
+        ScoreText.text = $"Счёт : {m_Points}";
     }
 
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        
+        // Обновление и сохранение рекорда, если он побит
+        if (m_Points > PlayerData.Instance.BestScore)
+        {
+            // Хранят значение рекорда и имя рекордсмена внутри сессии
+            PlayerData.Instance.BestScore = m_Points;
+            PlayerData.Instance.BestPlayerName = PlayerData.Instance.PlayerName;
+            
+            // Значения записываются в хранилище
+            PlayerPrefs.SetInt("HighScore", PlayerData.Instance.BestScore);
+            PlayerPrefs.SetString("HighScoreName", PlayerData.Instance.PlayerName);
+            
+            // Данные сохраняются между запусками приложения
+            PlayerPrefs.Save();
+            
+            HighScoreText.text = $"Лучший счёт: {PlayerData.Instance.BestPlayerName} : {PlayerData.Instance.BestScore}";
+        }
     }
 }
